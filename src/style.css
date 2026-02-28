@@ -244,3 +244,62 @@ body {
   transform: scale(1.02);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
+
+/* Skill Select Modal */
+.skill-intro {
+  margin-bottom: 1.25rem;
+  color: #94a3b8;
+}
+
+.skill-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skill-btn {
+  padding: 1rem 1.25rem;
+  font-size: 0.9375rem;
+  background: rgba(124, 58, 237, 0.3);
+  color: #e2e8f0;
+  border: 1px solid rgba(124, 58, 237, 0.6);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  text-align: left;
+}
+
+.skill-btn:hover {
+  background: rgba(124, 58, 237, 0.5);
+  transform: scale(1.02);
+}
+
+.skill-btn strong {
+  color: #fbbf24;
+}
+
+/* Board Complete Stats */
+.board-stats {
+  text-align: left;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+}
+
+.board-stats p {
+  margin-bottom: 0.5rem;
+}
+
+.discard-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+}
+
+.final-ranking {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #94a3b8;
+}

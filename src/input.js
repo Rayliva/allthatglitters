@@ -10,6 +10,7 @@ export class InputHandler {
     this.onUpdate = onUpdate;
 
     this.boundHandleClick = this.handleClick.bind(this);
+    this.boundHandleContextMenu = this.handleContextMenu.bind(this);
     this.boundHandleMouseMove = this.handleMouseMove.bind(this);
 
     this.setup();
@@ -17,12 +18,22 @@ export class InputHandler {
 
   setup() {
     this.canvas.addEventListener('click', this.boundHandleClick);
+    this.canvas.addEventListener('contextmenu', this.boundHandleContextMenu);
     this.canvas.addEventListener('mousemove', this.boundHandleMouseMove);
   }
 
   destroy() {
     this.canvas.removeEventListener('click', this.boundHandleClick);
+    this.canvas.removeEventListener('contextmenu', this.boundHandleContextMenu);
     this.canvas.removeEventListener('mousemove', this.boundHandleMouseMove);
+  }
+
+  handleContextMenu(e) {
+    e.preventDefault();
+    // Right-click anywhere on board = discard (spec)
+    if (this.gameState.currentRune && this.gameState.discardToForge()) {
+      this.onUpdate?.();
+    }
   }
 
   handleClick(e) {
@@ -33,10 +44,20 @@ export class InputHandler {
     const offset = this.renderer.getBoardOffset();
     const { x: gx, y: gy } = this.gameState.screenToGrid(x, y, offset.x, offset.y);
 
-    if (gx >= 0 && gx < this.gameState.gridWidth && gy >= 0 && gy < this.gameState.gridHeight) {
-      const placed = this.gameState.placeRune(gx, gy);
-      if (placed) this.onUpdate?.();
+    if (gx < 0 || gx >= this.gameState.gridWidth || gy < 0 || gy >= this.gameState.gridHeight) {
+      return;
     }
+
+    // Skull: click on rune to remove it
+    if (this.gameState.currentRune?.isSkull) {
+      const removed = this.gameState.useSkullToRemove(gx, gy);
+      if (removed) this.onUpdate?.();
+      return;
+    }
+
+    // Normal placement
+    const placed = this.gameState.placeRune(gx, gy);
+    if (placed) this.onUpdate?.();
   }
 
   handleMouseMove(e) {
@@ -48,9 +69,15 @@ export class InputHandler {
     const { x: gx, y: gy } = this.gameState.screenToGrid(x, y, offset.x, offset.y);
 
     if (gx >= 0 && gx < this.gameState.gridWidth && gy >= 0 && gy < this.gameState.gridHeight) {
-      const canPlace = this.gameState.canPlaceAt(gx, gy);
-      this.canvas.style.cursor = canPlace ? 'pointer' : 'default';
-      this.gameState.selectedCell = canPlace ? { x: gx, y: gy } : null;
+      if (this.gameState.currentRune?.isSkull) {
+        const canRemove = this.gameState.canSkullRemoveAt(gx, gy);
+        this.canvas.style.cursor = canRemove ? 'pointer' : 'default';
+        this.gameState.selectedCell = canRemove ? { x: gx, y: gy } : null;
+      } else {
+        const canPlace = this.gameState.canPlaceAt(gx, gy);
+        this.canvas.style.cursor = canPlace ? 'pointer' : 'default';
+        this.gameState.selectedCell = canPlace ? { x: gx, y: gy } : null;
+      }
     } else {
       this.canvas.style.cursor = 'default';
       this.gameState.selectedCell = null;

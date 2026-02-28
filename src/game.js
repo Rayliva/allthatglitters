@@ -2,6 +2,18 @@
  * Game State, grid logic, and rules engine for All That Glitters (Alchemy clone)
  */
 
+import {
+  ZODIAC_SYMBOLS,
+  RUNE_COLORS,
+  getSymbolCountForBoard,
+  getColorCountForBoard,
+  getPlacementPoints,
+  getRowClearPoints,
+  getBoardClearPoints,
+  WILD_CHANCE,
+  SKULL_CHANCE,
+} from './constants.js';
+
 // Cell states
 export const CellState = {
   EMPTY: 'empty',
@@ -9,22 +21,31 @@ export const CellState = {
   GOLD: 'gold',
 };
 
-// Rune colors and symbols for variety
-export const RUNE_COLORS = ['crimson', 'azure', 'amber', 'emerald', 'violet'];
-export const RUNE_SYMBOLS = ['circle', 'triangle', 'square', 'star', 'diamond'];
-
-/** Wild space - entirely grey, any rune can be placed next to it. Clears when row/column clears. */
-export const STARTING_RUNE = { color: 'grey', symbol: 'square', isWild: true };
+/** Wild space - solid block, any rune can be placed next to it */
+export const STARTING_RUNE = { color: 'grey', symbol: 'wild', isWild: true };
 export const STARTING_RUNE_X = 4;
 export const STARTING_RUNE_Y = 3;
 
+/** Skull rune - removes a rune of choice from the board */
+export const SKULL_RUNE = { isSkull: true };
+
 /**
- * Creates a random rune with a color and symbol
+ * Creates a random rune based on current board. May return wild or skull.
  */
-export function createRune() {
+export function createRune(board = 1) {
+  const r = Math.random();
+  if (r < WILD_CHANCE) {
+    return { color: 'grey', symbol: 'wild', isWild: true };
+  }
+  if (r < WILD_CHANCE + SKULL_CHANCE) {
+    return { ...SKULL_RUNE };
+  }
+
+  const symbolCount = getSymbolCountForBoard(board);
+  const colorCount = getColorCountForBoard(board);
   return {
-    color: RUNE_COLORS[Math.floor(Math.random() * RUNE_COLORS.length)],
-    symbol: RUNE_SYMBOLS[Math.floor(Math.random() * RUNE_SYMBOLS.length)],
+    color: RUNE_COLORS[Math.floor(Math.random() * colorCount)],
+    symbol: ZODIAC_SYMBOLS[Math.floor(Math.random() * symbolCount)],
   };
 }
 
@@ -35,49 +56,78 @@ export class GameState {
   constructor(config = {}) {
     this.gridWidth = config.gridWidth ?? 8;
     this.gridHeight = config.gridHeight ?? 8;
-    this.forgeCapacity = config.forgeCapacity ?? 5;
+    this.forgeCapacity = config.forgeCapacity ?? 3;
     this.cellSize = config.cellSize ?? 48;
+    this.skillLevel = config.skillLevel ?? 1;
+    this.startBoard = config.startBoard ?? 1;
 
     this.grid = [];
     this.currentRune = null;
     this.forge = [];
     this.score = 0;
-    this.level = 1;
+    this.board = this.startBoard; // Current board number (1-indexed)
     this.selectedCell = null;
-
+    this.placementStreak = 0;
+    this.maxPlacementStreak = 0;
+    this.boardsCleared = 0;
+    this.gameStartTime = null;
     this.init();
   }
 
   init(preserveScore = false) {
-    // Initialize empty grid
+    // Initialize grid - all cells start as LEAD (spec: "squares turn back to lead")
     this.grid = [];
     for (let y = 0; y < this.gridHeight; y++) {
       const row = [];
       for (let x = 0; x < this.gridWidth; x++) {
-        row.push({ state: CellState.EMPTY, rune: null });
+        row.push({ state: CellState.LEAD, rune: null });
       }
       this.grid.push(row);
     }
 
-    // Place starting grey square at 5x4 (appears at beginning of every round)
+    // Place starting wild at center
     const startCell = this.getCell(STARTING_RUNE_X, STARTING_RUNE_Y);
     if (startCell) {
       startCell.rune = { ...STARTING_RUNE };
-      startCell.state = CellState.LEAD;
     }
 
-    this.currentRune = createRune();
+    this.currentRune = createRune(this.board);
     this.forge = [];
-    if (!preserveScore) this.score = 0;
+    if (!preserveScore) {
+      this.score = 0;
+      this.board = this.startBoard;
+      this.placementStreak = 0;
+      this.maxPlacementStreak = 0;
+      this.boardsCleared = 0;
+      this.gameStartTime = Date.now();
+    }
     this.selectedCell = null;
   }
 
   /**
-   * Start a new round (next level) - clear board, keep cumulative score
+   * Start a new round (next board) - clear board, keep cumulative score
    */
   startNewRound() {
-    this.level += 1;
-    this.init(true);
+    this.board += 1;
+    // Reset grid to lead with no runes
+    for (let y = 0; y < this.gridHeight; y++) {
+      for (let x = 0; x < this.gridWidth; x++) {
+        const cell = this.grid[y][x];
+        cell.state = CellState.LEAD;
+        cell.rune = null;
+      }
+    }
+    // Place starting wild
+    const startCell = this.getCell(STARTING_RUNE_X, STARTING_RUNE_Y);
+    if (startCell) {
+      startCell.rune = { ...STARTING_RUNE };
+    }
+    // Board clear: lower forge by one level (does not empty)
+    if (this.forge.length > 0) {
+      this.forge.pop();
+    }
+    this.currentRune = createRune(this.board);
+    this.selectedCell = null;
   }
 
   /**
@@ -104,39 +154,53 @@ export class GameState {
 
   /**
    * Check if a rune shares a property (color or symbol) with another rune.
-   * Wild spaces match any rune (any placement next to them is valid).
+   * Wild spaces match any rune.
    */
   sharesProperty(runeA, runeB) {
     if (!runeA || !runeB) return false;
     if (runeB.isWild) return true;
+    if (runeA.isWild) return true;
+    if (runeA.isSkull || runeB.isSkull) return false;
     return runeA.color === runeB.color || runeA.symbol === runeB.symbol;
   }
 
   /**
-   * Check if placement is valid - rune must share a property with EVERY adjacent neighbor that has a rune
-   * Can place on EMPTY cells or GOLD cells with no rune (cleared slots)
+   * Check if placement is valid. Wild can go anywhere when board is empty.
    */
   canPlaceAt(x, y) {
     const cell = this.getCell(x, y);
-    if (!cell || cell.rune !== null || !this.currentRune) {
-      return false;
-    }
+    if (!cell || !this.currentRune) return false;
+
+    // Skull is not placed - it's used to remove a rune
+    if (this.currentRune.isSkull) return false;
+
+    // Can't place on cell that already has a rune
+    if (cell.rune !== null) return false;
 
     const adjacent = this.getAdjacentCells(x, y);
     const neighborsWithRunes = adjacent.filter((adjCell) => adjCell.rune !== null);
 
-    // First placement: allow anywhere if board has no runes
+    // Must be adjacent to at least one rune, unless board is totally blank (spec)
     if (neighborsWithRunes.length === 0) {
-      const hasNoRunes = this.grid.every(
-        (row) => row.every((c) => c.rune === null)
-      );
-      return hasNoRunes;
+      const hasNoRunes = this.countRunesOnBoard() === 0;
+      if (hasNoRunes) return true; // Board totally blank, place anywhere
+      return false; // Need adjacency
     }
 
-    // Every adjacent rune must share at least one property (color or symbol)
+    // Every adjacent rune must share at least one property
     return neighborsWithRunes.every((adjCell) =>
       this.sharesProperty(this.currentRune, adjCell.rune)
     );
+  }
+
+  countRunesOnBoard() {
+    let count = 0;
+    for (let y = 0; y < this.gridHeight; y++) {
+      for (let x = 0; x < this.gridWidth; x++) {
+        if (this.grid[y][x].rune) count++;
+      }
+    }
+    return count;
   }
 
   /**
@@ -147,31 +211,35 @@ export class GameState {
 
     const cell = this.getCell(x, y);
     cell.rune = { ...this.currentRune };
-    if (cell.state !== CellState.GOLD) {
-      cell.state = CellState.LEAD;
+
+    const pts = getPlacementPoints(this.board);
+    this.score += pts;
+    this.placementStreak += 1;
+    if (this.placementStreak > this.maxPlacementStreak) {
+      this.maxPlacementStreak = this.placementStreak;
     }
 
-    this.score += 10;
     this.onSuccessfulPlacement();
     this.checkRowColumnBonuses();
 
-    this.currentRune = createRune();
+    this.currentRune = createRune(this.board);
     this.selectedCell = null;
     return true;
   }
 
   /**
-   * When a row or column is fully filled (every cell has a rune), grant bonus, clear runes, but keep gold background
+   * When a row or column is fully filled, grant bonus, clear runes, set gold, EMPTY FORGE
    */
   checkRowColumnBonuses() {
-    const BONUS = 25;
+    const BONUS = getRowClearPoints(this.board);
+    let anyCleared = false;
 
-    // Check rows - only full when every cell has a rune (gold cells with no rune must be filled too)
     for (let y = 0; y < this.gridHeight; y++) {
       const row = this.grid[y];
       const isFull = row.every((c) => c.rune !== null);
       if (isFull) {
         this.score += BONUS;
+        anyCleared = true;
         row.forEach((c) => {
           c.state = CellState.GOLD;
           c.rune = null;
@@ -179,7 +247,6 @@ export class GameState {
       }
     }
 
-    // Check columns
     for (let x = 0; x < this.gridWidth; x++) {
       const col = [];
       for (let y = 0; y < this.gridHeight; y++) {
@@ -188,6 +255,7 @@ export class GameState {
       const isFull = col.every((c) => c && c.rune !== null);
       if (isFull) {
         this.score += BONUS;
+        anyCleared = true;
         col.forEach((c) => {
           if (c) {
             c.state = CellState.GOLD;
@@ -196,6 +264,33 @@ export class GameState {
         });
       }
     }
+
+    // Row/column clear empties the forge
+    if (anyCleared) {
+      this.forge = [];
+    }
+
+    // Rare: all runes cleared without full gold -> give wild (spec)
+    if (anyCleared && this.countRunesOnBoard() === 0 && !this.isLevelComplete()) {
+      this.currentRune = { color: 'grey', symbol: 'wild', isWild: true };
+    }
+  }
+
+  /**
+   * Use skull to remove a rune at (x, y). Lowers forge by one.
+   */
+  useSkullToRemove(x, y) {
+    if (!this.currentRune?.isSkull) return false;
+    const cell = this.getCell(x, y);
+    if (!cell || !cell.rune || cell.rune.isWild) return false;
+
+    cell.rune = null;
+    this.currentRune = createRune(this.board);
+    // Skull use lowers forge one level
+    if (this.forge.length > 0) {
+      this.forge.pop();
+    }
+    return true;
   }
 
   /**
@@ -206,50 +301,42 @@ export class GameState {
     if (this.forge.length >= this.forgeCapacity) return false;
 
     this.forge.push(this.currentRune);
-    this.currentRune = createRune();
+    this.currentRune = createRune(this.board);
     this.selectedCell = null;
+    this.placementStreak = 0;
     return true;
   }
 
   /**
-   * Clear forge by placing runes - each successful placement removes one from forge
-   */
-  clearForgeSlot() {
-    if (this.forge.length > 0) {
-      this.forge.pop();
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * When placing a rune successfully, clear one slot from forge if it has runes
+   * Each successful placement removes one from forge
    */
   onSuccessfulPlacement() {
-    this.clearForgeSlot();
+    if (this.forge.length > 0) {
+      this.forge.pop();
+    }
   }
 
-  /**
-   * Convert screen coordinates to grid coordinates
-   */
   screenToGrid(screenX, screenY, offsetX, offsetY) {
     const x = Math.floor((screenX - offsetX) / this.cellSize);
     const y = Math.floor((screenY - offsetY) / this.cellSize);
     return { x, y };
   }
 
-  /**
-   * Check if forge is full
-   */
   isForgeFull() {
     return this.forge.length >= this.forgeCapacity;
   }
 
-  /**
-   * Check if the current rune can be placed anywhere on the board
-   */
   hasValidPlacement() {
     if (!this.currentRune) return false;
+    if (this.currentRune.isSkull) {
+      // Skull can be used if there's a removable rune (non-wild)
+      for (let y = 0; y < this.gridHeight; y++) {
+        for (let x = 0; x < this.gridWidth; x++) {
+          if (this.canSkullRemoveAt(x, y)) return true;
+        }
+      }
+      return false;
+    }
     for (let y = 0; y < this.gridHeight; y++) {
       for (let x = 0; x < this.gridWidth; x++) {
         if (this.canPlaceAt(x, y)) return true;
@@ -259,18 +346,37 @@ export class GameState {
   }
 
   /**
-   * Game over: forge is full and current rune cannot be placed anywhere
+   * Can skull remove a rune at (x,y)?
    */
+  canSkullRemoveAt(x, y) {
+    if (!this.currentRune?.isSkull) return false;
+    const cell = this.getCell(x, y);
+    return cell && cell.rune && !cell.rune.isWild;
+  }
+
   isGameOver() {
     return this.isForgeFull() && !this.hasValidPlacement();
   }
 
   /**
-   * Level complete: all cells are gold
+   * Level/board complete: all cells are gold
    */
   isLevelComplete() {
     return this.grid.every((row) =>
       row.every((c) => c.state === CellState.GOLD)
     );
+  }
+
+  /**
+   * When completing a board: add board clear bonus, track stats
+   */
+  completeBoard() {
+    this.score += getBoardClearPoints(this.board);
+    this.boardsCleared += 1;
+  }
+
+  getGameTimeSeconds() {
+    if (!this.gameStartTime) return 0;
+    return Math.floor((Date.now() - this.gameStartTime) / 1000);
   }
 }

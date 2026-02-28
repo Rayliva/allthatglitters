@@ -11,7 +11,7 @@
       <header class="game-header">
         <h1>All That Glitters</h1>
         <div class="score-display">
-          <span>Level <strong id="level">1</strong></span>
+          <span>Board <strong id="board">1</strong></span>
           <span>Score: <strong id="score">0</strong></span>
         </div>
       </header>
@@ -20,6 +20,7 @@
         <aside class="game-sidebar">
           <div class="current-rune">
             <button type="button" class="discard-btn" id="discard-btn">Discard to Forge</button>
+            <p class="discard-hint">Right-click on board to discard</p>
           </div>
           <div class="forge-zone">
             <h3>The Forge</h3>
@@ -28,10 +29,34 @@
         </aside>
       </main>
     </div>
+    <div id="skill-select-modal" class="modal">
+      <div class="modal-content">
+        <h2>Choose Your Path</h2>
+        <p class="skill-intro">Select your starting skill level:</p>
+        <div class="skill-buttons">
+          <button type="button" class="skill-btn" data-skill="1">
+            <strong>Apprentice</strong><br>Start at Board 1
+          </button>
+          <button type="button" class="skill-btn" data-skill="2">
+            <strong>Adept</strong><br>Start at Board 4
+          </button>
+          <button type="button" class="skill-btn" data-skill="3">
+            <strong>Master</strong><br>Start at Board 7
+          </button>
+        </div>
+      </div>
+    </div>
     <div id="level-complete-modal" class="modal" hidden>
       <div class="modal-content">
-        <h2>Congratulations!</h2>
-        <p class="level-message">Continue to level <strong id="next-level">2</strong></p>
+        <h2>Board Complete!</h2>
+        <p class="level-message">Continue to board <strong id="next-level">2</strong></p>
+        <div class="board-stats">
+          <p><strong>Ranking:</strong> <span id="current-ranking">—</span></p>
+          <p><strong>Next rank at:</strong> <span id="next-rank-score">—</span></p>
+          <p><strong>Game time:</strong> <span id="game-time">—</span></p>
+          <p><strong>Boards cleared:</strong> <span id="boards-cleared">—</span></p>
+          <p><strong>Best streak (no discard):</strong> <span id="max-streak">—</span></p>
+        </div>
         <button type="button" class="restart-btn" id="continue-btn">Continue</button>
       </div>
     </div>
@@ -39,6 +64,7 @@
       <div class="modal-content">
         <h2>Game Over</h2>
         <p class="final-score">Your score: <strong id="final-score">0</strong></p>
+        <p class="final-ranking">Ranking: <strong id="final-ranking">—</strong></p>
         <div class="leaderboard">
           <h3>High Scores</h3>
           <ol id="leaderboard-list"></ol>

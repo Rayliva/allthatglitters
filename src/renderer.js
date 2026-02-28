@@ -3,8 +3,9 @@
  */
 
 import { CellState } from './game.js';
+import { ZODIAC_UNICODE } from './constants.js';
 
-// Color mapping for rune colors (exported for rune preview)
+// Color mapping for rune colors
 export const COLOR_MAP = {
   crimson: '#dc2626',
   azure: '#2563eb',
@@ -12,75 +13,85 @@ export const COLOR_MAP = {
   emerald: '#059669',
   violet: '#7c3aed',
   grey: '#6b7280',
+  coral: '#ea580c',
+  teal: '#0d9488',
+  rose: '#e11d48',
 };
 
-function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
-  let rot = (Math.PI / 2) * 3;
-  const step = Math.PI / spikes;
-  ctx.beginPath();
-  for (let i = 0; i < spikes * 2; i++) {
-    const r = i % 2 === 0 ? outerR : innerR;
-    const x = cx + Math.cos(rot) * r;
-    const y = cy + Math.sin(rot) * r;
-    ctx[i === 0 ? 'moveTo' : 'lineTo'](x, y);
-    rot += step;
-  }
-  ctx.closePath();
-}
-
 /**
- * Draw a rune to a 2D context (used by board and sidebar)
+ * Draw a rune to a 2D context (zodiac symbols, wild, skull)
  */
 export function drawRune(ctx, px, py, size, rune) {
-  const color = COLOR_MAP[rune.color] || '#888';
   const cx = px + size / 2;
   const cy = py + size / 2;
-  const r = size / 4;
 
+  if (rune.isSkull) {
+    drawSkull(ctx, cx, cy, size);
+    return;
+  }
+
+  if (rune.isWild) {
+    ctx.fillStyle = COLOR_MAP.grey || '#6b7280';
+    ctx.fillRect(px, py, size, size);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(px, py, size, size);
+    return;
+  }
+
+  const color = COLOR_MAP[rune.color] || '#888';
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
 
-  switch (rune.symbol) {
-    case 'circle':
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      break;
-    case 'triangle':
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r);
-      ctx.lineTo(cx - r, cy + r);
-      ctx.lineTo(cx + r, cy + r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      break;
-    case 'square':
-      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-      ctx.strokeRect(cx - r, cy - r, r * 2, r * 2);
-      break;
-    case 'star':
-      drawStar(ctx, cx, cy, 5, r, r * 0.5);
-      ctx.fill();
-      ctx.stroke();
-      break;
-    case 'diamond':
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r);
-      ctx.lineTo(cx + r, cy);
-      ctx.lineTo(cx, cy + r);
-      ctx.lineTo(cx - r, cy);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      break;
-    default:
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
+  // Draw zodiac symbol as Unicode glyph
+  const symbol = rune.symbol;
+  if (symbol && ZODIAC_UNICODE[symbol]) {
+    const char = ZODIAC_UNICODE[symbol];
+    ctx.font = `bold ${size * 0.7}px "Segoe UI Symbol", "Arial Unicode MS", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(char, cx, cy);
+    ctx.strokeText(char, cx, cy);
+  } else {
+    // Fallback circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, size / 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
   }
+}
+
+function drawSkull(ctx, cx, cy, size) {
+  const r = size / 3;
+  ctx.fillStyle = '#e5e7eb';
+  ctx.strokeStyle = '#9ca3af';
+  ctx.lineWidth = 1;
+
+  // Skull shape (simplified)
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.3, r * 0.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Eye sockets
+  ctx.fillStyle = '#374151';
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.35, cy - r * 0.4, r * 0.2, r * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.35, cy - r * 0.4, r * 0.2, r * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Crossbones - X shape
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = Math.max(1, size / 24);
+  ctx.beginPath();
+  ctx.moveTo(cx - r, cy + r * 0.2);
+  ctx.lineTo(cx + r, cy + r * 0.8);
+  ctx.moveTo(cx + r, cy + r * 0.2);
+  ctx.lineTo(cx - r, cy + r * 0.8);
+  ctx.stroke();
 }
 
 export class Renderer {
@@ -92,9 +103,6 @@ export class Renderer {
     this.padding = 16;
   }
 
-  /**
-   * Resize canvas to match game dimensions
-   */
   resize() {
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
@@ -109,9 +117,6 @@ export class Renderer {
     this.height = rect.height;
   }
 
-  /**
-   * Main render loop
-   */
   render() {
     this.ctx.clearRect(0, 0, this.width, this.height);
 
@@ -127,9 +132,6 @@ export class Renderer {
     this.renderGridOverlay(offsetX, offsetY);
   }
 
-  /**
-   * Draw the board background
-   */
   renderBoard(offsetX, offsetY) {
     const w = this.gameState.gridWidth * this.cellSize;
     const h = this.gameState.gridHeight * this.cellSize;
@@ -156,9 +158,6 @@ export class Renderer {
     ctx.quadraticCurveTo(x, y, x + r, y);
   }
 
-  /**
-   * Draw all cells
-   */
   renderCells(offsetX, offsetY) {
     const { grid, selectedCell } = this.gameState;
 
@@ -168,20 +167,17 @@ export class Renderer {
         const px = offsetX + x * this.cellSize;
         const py = offsetY + y * this.cellSize;
         const isSelected = selectedCell && selectedCell.x === x && selectedCell.y === y;
+        const isSkullTarget = this.gameState.currentRune?.isSkull && this.gameState.canSkullRemoveAt(x, y);
 
-        this.renderCell(px, py, cell, isSelected);
+        this.renderCell(px, py, cell, isSelected, isSkullTarget);
       }
     }
   }
 
-  /**
-   * Draw a single cell
-   */
-  renderCell(px, py, cell, isSelected) {
+  renderCell(px, py, cell, isSelected, isSkullTarget) {
     const size = this.cellSize - 2;
     const margin = 1;
 
-    // Cell background
     if (cell.state === CellState.EMPTY) {
       this.ctx.fillStyle = '#16213e';
     } else if (cell.state === CellState.LEAD) {
@@ -197,21 +193,25 @@ export class Renderer {
       this.ctx.lineWidth = 3;
       this.ctx.strokeRect(px + margin, py + margin, size, size);
     }
+    if (isSkullTarget) {
+      this.ctx.strokeStyle = '#ef4444';
+      this.ctx.lineWidth = 3;
+      this.ctx.strokeRect(px + margin, py + margin, size, size);
+    }
 
     if (cell.rune) {
       if (cell.rune.isWild) {
-        // Wild space: entirely grey, no symbol
         this.ctx.fillStyle = '#6b7280';
         this.ctx.fillRect(px + margin, py + margin, size, size);
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(px + margin, py + margin, size, size);
       } else {
         drawRune(this.ctx, px + margin, py + margin, size, cell.rune);
       }
     }
   }
 
-  /**
-   * Draw grid lines overlay
-   */
   renderGridOverlay(offsetX, offsetY) {
     this.ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     this.ctx.lineWidth = 1;
@@ -232,9 +232,6 @@ export class Renderer {
     }
   }
 
-  /**
-   * Get board offset for coordinate conversion (used by input)
-   */
   getBoardOffset() {
     const boardWidth =
       this.gameState.gridWidth * this.cellSize + this.padding * 2;
