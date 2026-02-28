@@ -115,5 +115,5 @@ export function getBoardClearPoints(board) {
 }
 
 // Special rune chances (0-1)
-export const WILD_CHANCE = 0.08;
-export const SKULL_CHANCE = 0.06;
+export const WILD_CHANCE = 0.03;
+export const SKULL_CHANCE = 0.02;

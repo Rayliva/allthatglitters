@@ -205,9 +205,10 @@ export class GameState {
 
   /**
    * Place the current rune at the given position
+   * @returns {{ placed: boolean, rowColumnCleared: boolean }}
    */
   placeRune(x, y) {
-    if (!this.canPlaceAt(x, y)) return false;
+    if (!this.canPlaceAt(x, y)) return { placed: false, rowColumnCleared: false };
 
     const cell = this.getCell(x, y);
     cell.rune = { ...this.currentRune };
@@ -220,15 +221,16 @@ export class GameState {
     }
 
     this.onSuccessfulPlacement();
-    this.checkRowColumnBonuses();
+    const rowColumnCleared = this.checkRowColumnBonuses();
 
     this.currentRune = createRune(this.board);
     this.selectedCell = null;
-    return true;
+    return { placed: true, rowColumnCleared };
   }
 
   /**
    * When a row or column is fully filled, grant bonus, clear runes, set gold, EMPTY FORGE
+   * @returns {boolean} Whether any row or column was cleared
    */
   checkRowColumnBonuses() {
     const BONUS = getRowClearPoints(this.board);
@@ -274,6 +276,7 @@ export class GameState {
     if (anyCleared && this.countRunesOnBoard() === 0 && !this.isLevelComplete()) {
       this.currentRune = { color: 'grey', symbol: 'wild', isWild: true };
     }
+    return anyCleared;
   }
 
   /**

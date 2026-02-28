@@ -94,6 +94,9 @@ function drawSkull(ctx, cx, cy, size) {
   ctx.stroke();
 }
 
+const SCORE_POPUP_DURATION_MS = 1000;
+const SCORE_POPUP_RISE_PX = 32;
+
 export class Renderer {
   constructor(canvas, gameState) {
     this.canvas = canvas;
@@ -101,6 +104,19 @@ export class Renderer {
     this.gameState = gameState;
     this.cellSize = gameState.cellSize;
     this.padding = 16;
+    this.scorePopups = [];
+  }
+
+  /**
+   * Add a score popup at grid position (gx, gy) that floats up and fades
+   */
+  addScorePopup(gx, gy, points) {
+    this.scorePopups.push({
+      gx,
+      gy,
+      points,
+      startTime: Date.now(),
+    });
   }
 
   resize() {
@@ -129,7 +145,38 @@ export class Renderer {
 
     this.renderBoard(offsetX, offsetY);
     this.renderCells(offsetX, offsetY);
+    this.renderScorePopups(offsetX, offsetY);
     this.renderGridOverlay(offsetX, offsetY);
+  }
+
+  renderScorePopups(offsetX, offsetY) {
+    const now = Date.now();
+    this.scorePopups = this.scorePopups.filter((p) => {
+      const elapsed = now - p.startTime;
+      if (elapsed >= SCORE_POPUP_DURATION_MS) return false;
+
+      const t = elapsed / SCORE_POPUP_DURATION_MS;
+      const rise = t * SCORE_POPUP_RISE_PX;
+      const alpha = 1 - t;
+
+      const cx = offsetX + p.gx * this.cellSize + this.cellSize / 2;
+      const cy = offsetY + p.gy * this.cellSize - rise;
+
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha;
+      this.ctx.font = 'bold 18px "Segoe UI", sans-serif';
+      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.strokeStyle = '#92400e';
+      this.ctx.lineWidth = 2;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      const text = `+${p.points}`;
+      this.ctx.strokeText(text, cx, cy);
+      this.ctx.fillText(text, cx, cy);
+      this.ctx.restore();
+
+      return true;
+    });
   }
 
   renderBoard(offsetX, offsetY) {

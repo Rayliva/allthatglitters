@@ -7,6 +7,7 @@ import { Renderer, drawRune } from './renderer.js';
 import { InputHandler } from './input.js';
 import { loadHighScores, saveScore } from './leaderboard.js';
 import { getRanking, SKILL_LEVELS } from './constants.js';
+import { playForgeSound, playLoseSound, playWinSound } from './audio.js';
 
 const RUNE_PREVIEW_SIZE = 40;
 
@@ -43,6 +44,7 @@ function hideSkillSelectModal() {
 }
 
 function showGameOverModal(score) {
+  playLoseSound();
   saveScore(score);
   const modal = document.getElementById('game-over-modal');
   document.getElementById('final-score').textContent = score;
@@ -70,6 +72,7 @@ function hideGameOverModal() {
 }
 
 function showLevelCompleteModal(gameState) {
+  playWinSound();
   gameState.completeBoard();
 
   const { title, nextAt } = getRanking(gameState.score);
@@ -174,7 +177,10 @@ function startGame(skillLevel) {
   // Use onclick to replace handlers (avoids duplicates on restart)
   document.getElementById('discard-btn').onclick = () => {
     if (gameOver || levelComplete) return;
-    if (gameState.discardToForge()) onAction();
+    if (gameState.discardToForge()) {
+      playForgeSound();
+      onAction();
+    }
   };
 
   document.getElementById('continue-btn').onclick = () => {

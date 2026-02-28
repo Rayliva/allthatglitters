@@ -2,6 +2,9 @@
  * Input handler for mouse/click events
  */
 
+import { playPlaceSound, playRowColumnClearSound, playForgeSound, playSkullSound } from './audio.js';
+import { getPlacementPoints } from './constants.js';
+
 export class InputHandler {
   constructor(canvas, gameState, renderer, onUpdate) {
     this.canvas = canvas;
@@ -32,6 +35,7 @@ export class InputHandler {
     e.preventDefault();
     // Right-click anywhere on board = discard (spec)
     if (this.gameState.currentRune && this.gameState.discardToForge()) {
+      playForgeSound();
       this.onUpdate?.();
     }
   }
@@ -51,13 +55,25 @@ export class InputHandler {
     // Skull: click on rune to remove it
     if (this.gameState.currentRune?.isSkull) {
       const removed = this.gameState.useSkullToRemove(gx, gy);
-      if (removed) this.onUpdate?.();
+      if (removed) {
+        playSkullSound();
+        this.onUpdate?.();
+      }
       return;
     }
 
     // Normal placement
-    const placed = this.gameState.placeRune(gx, gy);
-    if (placed) this.onUpdate?.();
+    const result = this.gameState.placeRune(gx, gy);
+    if (result.placed) {
+      const pts = getPlacementPoints(this.gameState.board);
+      this.renderer.addScorePopup(gx, gy, pts);
+      if (result.rowColumnCleared) {
+        playRowColumnClearSound();
+      } else {
+        playPlaceSound();
+      }
+      this.onUpdate?.();
+    }
   }
 
   handleMouseMove(e) {
