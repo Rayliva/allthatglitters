@@ -5,7 +5,7 @@
 import { GameState } from './game.js';
 import { Renderer, drawRune } from './renderer.js';
 import { InputHandler } from './input.js';
-import { loadHighScores, saveScore, updateEntryName } from './leaderboard.js';
+import { loadHighScores, saveScore, updateEntryName, generatePlayerName } from './leaderboard.js';
 import { getRanking, SKILL_LEVELS } from './constants.js';
 import { playForgeSound, playLoseSound, playWinSound } from './audio.js';
 
@@ -15,6 +15,8 @@ const CELL_SIZE = 48;
 const GRID_WIDTH = 9;
 const GRID_HEIGHT = 8;
 const FORGE_CAPACITY = 3;
+
+const TOP_DISPLAY = 5;
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -43,23 +45,70 @@ function hideSkillSelectModal() {
   document.getElementById('skill-select-modal').hidden = true;
 }
 
-function renderLeaderboardList(listEl) {
+function renderLeaderboardList(listEl, belowEl, options = {}) {
+  const { highlightDate, highlightScore, currentPlayer } = options;
   const scores = loadHighScores();
+
+  // Build full ranked list for rank calculation (include current player if they didn't make it)
+  let ranked = [...scores];
+  let playerRank = null;
+  let playerEntry = null;
+
+  if (currentPlayer) {
+    if (currentPlayer.madeList) {
+      const idx = ranked.findIndex((e) => e.date === currentPlayer.date && e.score === currentPlayer.score);
+      if (idx >= 0) {
+        playerRank = idx + 1;
+        playerEntry = { ...ranked[idx], name: currentPlayer.name ?? ranked[idx].name };
+      }
+    } else {
+      // Didn't make list: add virtual entry to compute rank
+      const virtual = { score: currentPlayer.score, date: null, name: 'You' };
+      ranked.push(virtual);
+      ranked.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      playerRank = ranked.findIndex((e) => e === virtual) + 1;
+      playerEntry = virtual;
+    }
+  }
+
+  // Top N entries
   listEl.innerHTML = '';
-  if (scores.length === 0) {
+  const toShow = ranked.slice(0, TOP_DISPLAY);
+  if (toShow.length === 0) {
     listEl.innerHTML = '<li class="empty">No scores yet</li>';
   } else {
-    scores.forEach((entry) => {
+    toShow.forEach((entry) => {
       const li = document.createElement('li');
-      li.textContent = entry.name ? `${entry.name} — ${entry.score}` : String(entry.score);
+      li.dataset.date = entry.date ?? '';
+      li.dataset.score = String(entry.score ?? 0);
+      const name = entry.name || 'Anonymous';
+      li.textContent = `${name} — ${entry.score}`;
+      if (highlightDate && highlightScore && entry.date === highlightDate && entry.score === highlightScore) {
+        li.classList.add('name-updated');
+      }
       listEl.appendChild(li);
     });
   }
+
+  // Below the line: show current player if they're not in top N
+  belowEl.innerHTML = '';
+  if (playerEntry && playerRank > TOP_DISPLAY) {
+    const divider = document.createElement('div');
+    divider.className = 'leaderboard-divider';
+    belowEl.appendChild(divider);
+    const yourRank = document.createElement('div');
+    yourRank.className = 'leaderboard-your-rank';
+    yourRank.textContent = `${playerRank}. ${playerEntry.name} — ${playerEntry.score}`;
+    belowEl.appendChild(yourRank);
+  }
 }
 
-function showGameOverModal(score) {
+function showGameOverModal(gameState) {
   playLoseSound();
-  const { madeList, date } = saveScore(score);
+  const score = gameState.score;
+  const randomName = generatePlayerName();
+  const { madeList, date } = saveScore(score, randomName);
+
   const modal = document.getElementById('game-over-modal');
   document.getElementById('final-score').textContent = score;
   const { title } = getRanking(score);
@@ -67,27 +116,46 @@ function showGameOverModal(score) {
 
   const nameEntryEl = document.querySelector('.name-entry');
   const nameInput = document.getElementById('highscore-name');
-  nameInput.value = '';
+  nameInput.value = randomName;
   nameInput.placeholder = 'Enter your name';
   nameEntryEl.hidden = !madeList;
 
   const listEl = document.getElementById('leaderboard-list');
-  renderLeaderboardList(listEl);
+  const belowEl = document.getElementById('leaderboard-below');
+
+  const getCurrentPlayer = () => ({
+    score,
+    date: madeList ? date : null,
+    name: nameInput.value.trim(),
+    madeList,
+  });
+
+  const doRender = (animate = false) => {
+    renderLeaderboardList(listEl, belowEl, {
+      highlightDate: animate ? date : null,
+      highlightScore: animate ? score : null,
+      currentPlayer: getCurrentPlayer(),
+    });
+  };
+
+  doRender();
 
   if (madeList && date) {
-    const onNameChange = () => {
+    const updateDisplay = (animate = false) => {
       const name = nameInput.value.trim();
       if (updateEntryName(score, date, name)) {
-        renderLeaderboardList(listEl);
+        doRender(animate);
       }
     };
-    nameInput.onblur = onNameChange;
+    nameInput.oninput = () => updateDisplay(false);
+    nameInput.onblur = () => updateDisplay(true);
     nameInput.onkeydown = (e) => {
       if (e.key === 'Enter') {
         nameInput.blur();
       }
     };
   } else {
+    nameInput.oninput = null;
     nameInput.onblur = null;
     nameInput.onkeydown = null;
   }
@@ -149,7 +217,7 @@ function startGame(skillLevel) {
     if (gameState.isGameOver()) {
       gameOver = true;
       inputHandler?.destroy();
-      showGameOverModal(gameState.score);
+      showGameOverModal(gameState);
     }
   }
 

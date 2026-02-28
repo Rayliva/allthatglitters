@@ -175,9 +175,31 @@ body {
   text-align: center;
 }
 
+.modal-content.game-over-content {
+  padding: 1rem 1.25rem;
+}
+
 .modal-content h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
+  color: #fbbf24;
+}
+
+.game-over-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.game-over-stats {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+  color: #94a3b8;
+}
+
+.game-over-stats strong {
   color: #fbbf24;
 }
 
@@ -190,35 +212,68 @@ body {
   margin-bottom: 1.5rem;
 }
 
-.final-score {
-  font-size: 1.125rem;
-  margin-bottom: 1.5rem;
-}
 
 .leaderboard {
   text-align: left;
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
 }
 
 .leaderboard h3 {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 #leaderboard-list {
   margin: 0;
   padding-left: 1.25rem;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
 }
 
 #leaderboard-list li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leaderboard-divider {
+  height: 1px;
+  background: rgba(148, 163, 184, 0.3);
+  margin: 0.35rem 0;
+}
+
+.leaderboard-your-rank {
+  font-size: 0.875rem;
+  padding: 0.15rem 0.35rem;
+  color: #94a3b8;
+}
+
+#leaderboard-list li.name-updated {
+  animation: leaderboard-flash 0.6s ease-out;
+}
+
+@keyframes leaderboard-flash {
+  0% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.6);
+    background: rgba(251, 191, 36, 0.15);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 12px 3px rgba(124, 58, 237, 0.5);
+    background: rgba(124, 58, 237, 0.12);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+    background: transparent;
+  }
 }
 
 #leaderboard-list li.empty {
@@ -298,28 +353,22 @@ body {
   margin-top: 0.5rem;
 }
 
-.final-ranking {
-  font-size: 1rem;
-  margin-bottom: 1rem;
-  color: #94a3b8;
-}
-
 .name-entry {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .name-entry label {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #94a3b8;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
 .name-entry input {
   width: 100%;
   max-width: 12rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9375rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.875rem;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: 6px;

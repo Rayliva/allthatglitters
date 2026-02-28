@@ -6,6 +6,14 @@ const STORAGE_KEY = 'allthatglitters_highscores';
 const MAX_ENTRIES = 10;
 
 /**
+ * Generate a random "Player####" style name
+ */
+export function generatePlayerName() {
+  const num = Math.floor(1000 + Math.random() * 9000); // 1000–9999
+  return `Player${num}`;
+}
+
+/**
  * Load high scores from localStorage
  */
 export function loadHighScores() {
@@ -21,10 +29,16 @@ export function loadHighScores() {
 
 /**
  * Save a score to the leaderboard. Returns { madeList, date } - date is the new entry's timestamp for later name updates.
+ * @param {number} score
+ * @param {string} name - Prefilled name (e.g. "Player8475")
  */
 export function saveScore(score, name = '') {
   const scores = loadHighScores();
-  const entry = { score, date: new Date().toISOString(), name: (name || '').trim() };
+  const entry = {
+    score,
+    date: new Date().toISOString(),
+    name: (name || '').trim(),
+  };
   scores.push(entry);
   scores.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   const top = scores.slice(0, MAX_ENTRIES);
