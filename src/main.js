@@ -343,17 +343,33 @@ function startGame(mode, difficulty) {
       cursorRuneEl.style.visibility = 'hidden';
     }
 
-    forgeDisplayEl.innerHTML = '';
-    for (let i = 0; i < gameState.forgeCapacity; i++) {
-      const slot = document.createElement('div');
-      slot.className = 'forge-slot';
-      if (i < gameState.forge.length) {
-        const r = gameState.forge[i];
-        const runeCanvas = createRuneCanvas(r, 28);
-        slot.appendChild(runeCanvas);
-        slot.classList.add('filled');
+    const count = gameState.forge.length;
+    if (forgeDisplayEl.dataset.fill !== String(count)) {
+      forgeDisplayEl.innerHTML = '';
+      forgeDisplayEl.dataset.fill = String(count);
+      const orbitRadius = 32;
+      let orbitContainer = null;
+      if (count > 0) {
+        orbitContainer = document.createElement('div');
+        orbitContainer.className = 'forge-orbit-container';
       }
-      forgeDisplayEl.appendChild(slot);
+      for (let i = 0; i < count; i++) {
+        const r = gameState.forge[i];
+        const angle = (360 / count) * i;
+        const orbit = document.createElement('div');
+        orbit.className = 'forge-rune-orbit';
+        orbit.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translateY(-${orbitRadius}px)`;
+        const inner = document.createElement('span');
+        inner.className = 'rune-inner';
+        inner.style.setProperty('--orbit-angle', String(angle));
+        const runeCanvas = createRuneCanvas(r, 28);
+        inner.appendChild(runeCanvas);
+        orbit.appendChild(inner);
+        orbitContainer.appendChild(orbit);
+      }
+      if (orbitContainer) {
+        forgeDisplayEl.appendChild(orbitContainer);
+      }
     }
   }
 
