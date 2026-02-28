@@ -3,6 +3,8 @@
  * No external audio files required
  */
 
+import { playAudioWithFallback } from './assets.js';
+
 let audioCtx = null;
 
 function getAudioContext() {
@@ -79,8 +81,7 @@ export function playRowColumnClearSound() {
 
 /** Skull removing a rune - uses custom audio file */
 export function playSkullSound() {
-  const audio = new Audio('/sounds/skull.mp3');
-  audio.play().catch(() => {}); // Ignore autoplay errors
+  playAudioWithFallback('sounds/skull.mp3');
 }
 
 /** Metallic clink for contributing to the forge */

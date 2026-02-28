@@ -303,3 +303,34 @@ body {
   margin-bottom: 1rem;
   color: #94a3b8;
 }
+
+.name-entry {
+  margin-bottom: 1rem;
+}
+
+.name-entry label {
+  display: block;
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.name-entry input {
+  width: 100%;
+  max-width: 12rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  color: #e2e8f0;
+}
+
+.name-entry input::placeholder {
+  color: #64748b;
+}
+
+.name-entry input:focus {
+  outline: none;
+  border-color: #fbbf24;
+}

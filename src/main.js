@@ -5,7 +5,7 @@
 import { GameState } from './game.js';
 import { Renderer, drawRune } from './renderer.js';
 import { InputHandler } from './input.js';
-import { loadHighScores, saveScore } from './leaderboard.js';
+import { loadHighScores, saveScore, updateEntryName } from './leaderboard.js';
 import { getRanking, SKILL_LEVELS } from './constants.js';
 import { playForgeSound, playLoseSound, playWinSound } from './audio.js';
 
@@ -43,25 +43,53 @@ function hideSkillSelectModal() {
   document.getElementById('skill-select-modal').hidden = true;
 }
 
+function renderLeaderboardList(listEl) {
+  const scores = loadHighScores();
+  listEl.innerHTML = '';
+  if (scores.length === 0) {
+    listEl.innerHTML = '<li class="empty">No scores yet</li>';
+  } else {
+    scores.forEach((entry) => {
+      const li = document.createElement('li');
+      li.textContent = entry.name ? `${entry.name} — ${entry.score}` : String(entry.score);
+      listEl.appendChild(li);
+    });
+  }
+}
+
 function showGameOverModal(score) {
   playLoseSound();
-  saveScore(score);
+  const { madeList, date } = saveScore(score);
   const modal = document.getElementById('game-over-modal');
   document.getElementById('final-score').textContent = score;
   const { title } = getRanking(score);
   document.getElementById('final-ranking').textContent = title;
 
+  const nameEntryEl = document.querySelector('.name-entry');
+  const nameInput = document.getElementById('highscore-name');
+  nameInput.value = '';
+  nameInput.placeholder = 'Enter your name';
+  nameEntryEl.hidden = !madeList;
+
   const listEl = document.getElementById('leaderboard-list');
-  listEl.innerHTML = '';
-  const scores = loadHighScores();
-  if (scores.length === 0) {
-    listEl.innerHTML = '<li class="empty">No scores yet</li>';
+  renderLeaderboardList(listEl);
+
+  if (madeList && date) {
+    const onNameChange = () => {
+      const name = nameInput.value.trim();
+      if (updateEntryName(score, date, name)) {
+        renderLeaderboardList(listEl);
+      }
+    };
+    nameInput.onblur = onNameChange;
+    nameInput.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        nameInput.blur();
+      }
+    };
   } else {
-    scores.forEach((entry, i) => {
-      const li = document.createElement('li');
-      li.textContent = `${i + 1}. ${entry.score}`;
-      listEl.appendChild(li);
-    });
+    nameInput.onblur = null;
+    nameInput.onkeydown = null;
   }
 
   modal.hidden = false;
