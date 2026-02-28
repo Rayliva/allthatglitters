@@ -6,7 +6,7 @@ import { GameState } from './game.js';
 import { Renderer, drawRune } from './renderer.js';
 import { InputHandler } from './input.js';
 import { loadHighScores, saveScore, updateEntryName, generatePlayerName } from './leaderboard.js';
-import { getRanking, SKILL_LEVELS } from './constants.js';
+import { getRanking, DIFFICULTY_LEVELS, GAME_MODES } from './constants.js';
 import { playForgeSound, playLoseSound, playWinSound } from './audio.js';
 
 const RUNE_PREVIEW_SIZE = 40;
@@ -37,13 +37,15 @@ function createRuneCanvas(rune, size) {
   return canvas;
 }
 
-function showSkillSelectModal() {
+function showHomeScreen() {
   document.getElementById('cursor-rune').style.visibility = 'hidden';
-  document.getElementById('skill-select-modal').hidden = false;
+  document.getElementById('home-screen').classList.remove('hidden');
+  document.getElementById('game-container').classList.add('hidden');
 }
 
-function hideSkillSelectModal() {
-  document.getElementById('skill-select-modal').hidden = true;
+function hideHomeScreen() {
+  document.getElementById('home-screen').classList.add('hidden');
+  document.getElementById('game-container').classList.remove('hidden');
 }
 
 function renderLeaderboardList(listEl, belowEl, pageControlsEl, options = {}) {
@@ -264,20 +266,23 @@ function hideLevelCompleteModal() {
   document.getElementById('level-complete-modal').hidden = true;
 }
 
-function createGameState(skillLevel) {
-  const { startBoard } = SKILL_LEVELS[skillLevel] || SKILL_LEVELS[1];
+function createGameState(mode, difficulty) {
+  const diff = DIFFICULTY_LEVELS[difficulty] || DIFFICULTY_LEVELS.easy;
+  const isTimeMode = mode === GAME_MODES.time;
   return new GameState({
     gridWidth: GRID_WIDTH,
     gridHeight: GRID_HEIGHT,
     cellSize: CELL_SIZE,
     forgeCapacity: FORGE_CAPACITY,
-    skillLevel,
-    startBoard,
+    skillLevel: diff.startBoard,
+    startBoard: diff.startBoard,
+    gameMode: mode,
+    timePerBoard: isTimeMode ? diff.timePerBoard : 60,
   });
 }
 
-function startGame(skillLevel) {
-  hideSkillSelectModal();
+function startGame(mode, difficulty) {
+  hideHomeScreen();
 
   const canvas = document.getElementById('game-canvas');
   const scoreEl = document.getElementById('score');
@@ -285,7 +290,7 @@ function startGame(skillLevel) {
   const cursorRuneEl = document.getElementById('cursor-rune');
   const forgeDisplayEl = document.getElementById('forge-display');
 
-  let gameState = createGameState(skillLevel);
+  let gameState = createGameState(mode, difficulty);
   let renderer = new Renderer(canvas, gameState);
   let inputHandler = null;
   let gameOver = false;
@@ -307,10 +312,27 @@ function startGame(skillLevel) {
     }
   }
 
+  const timerDisplayEl = document.getElementById('timer-display');
+  const timerEl = document.getElementById('timer');
+  if (gameState.gameMode === 'time') {
+    timerDisplayEl.classList.remove('hidden');
+  } else {
+    timerDisplayEl.classList.add('hidden');
+  }
+
   function updateUI() {
     if (gameOver || levelComplete) return;
     boardEl.textContent = gameState.board;
     scoreEl.textContent = gameState.score;
+    if (gameState.gameMode === 'time') {
+      const remaining = gameState.getBoardTimeRemaining();
+      timerEl.textContent = remaining ?? '—';
+      if (remaining !== null && remaining <= 10) {
+        timerEl.classList.add('timer-low');
+      } else {
+        timerEl.classList.remove('timer-low');
+      }
+    }
 
     cursorRuneEl.innerHTML = '';
     if (gameState.currentRune) {
@@ -371,7 +393,14 @@ function startGame(skillLevel) {
   document.getElementById('restart-btn').onclick = () => {
     hideGameOverModal();
     inputHandler?.destroy();
-    showSkillSelectModal();
+    showHomeScreen();
+  };
+
+  document.getElementById('new-game-btn').onclick = () => {
+    inputHandler?.destroy();
+    hideLevelCompleteModal();
+    hideGameOverModal();
+    showHomeScreen();
   };
 
   function resize() {
@@ -384,20 +413,39 @@ function startGame(skillLevel) {
 
   function gameLoop() {
     renderer.render();
-    if (!gameOver && !levelComplete) updateUI();
+    if (!gameOver && !levelComplete) {
+      updateUI();
+      checkGameOver(); // Time mode: check every frame for expiry
+    }
     requestAnimationFrame(gameLoop);
   }
   gameLoop();
 }
 
 function init() {
-  showSkillSelectModal();
+  showHomeScreen();
 
-  document.querySelectorAll('.skill-btn').forEach((btn) => {
+  let selectedMode = 'strategic';
+  let selectedDifficulty = 'easy';
+
+  document.querySelectorAll('.mode-options .home-option-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const skillLevel = parseInt(btn.dataset.skill, 10);
-      startGame(skillLevel);
+      document.querySelectorAll('.mode-options .home-option-btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedMode = btn.dataset.mode;
     });
+  });
+
+  document.querySelectorAll('.difficulty-options .home-option-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.difficulty-options .home-option-btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedDifficulty = btn.dataset.difficulty;
+    });
+  });
+
+  document.getElementById('home-play-btn').addEventListener('click', () => {
+    startGame(selectedMode, selectedDifficulty);
   });
 }
 

@@ -7,10 +7,11 @@
     <link rel="stylesheet" href="src/style.css" />
   </head>
   <body>
-    <div id="game-container">
+    <div id="game-container" class="hidden">
       <header class="game-header">
         <h1>All That Glitters</h1>
         <div class="score-display">
+          <span id="timer-display" class="timer-display hidden">Time: <strong id="timer">0</strong></span>
           <span>Board <strong id="board">1</strong></span>
           <span>Score: <strong id="score">0</strong></span>
         </div>
@@ -26,24 +27,40 @@
             <h3>The Forge</h3>
             <div id="forge-display"></div>
           </div>
+          <button type="button" class="new-game-btn" id="new-game-btn">New Game</button>
         </aside>
       </main>
     </div>
-    <div id="skill-select-modal" class="modal">
-      <div class="modal-content">
-        <h2>Choose Your Path</h2>
-        <p class="skill-intro">Select your starting skill level:</p>
-        <div class="skill-buttons">
-          <button type="button" class="skill-btn" data-skill="1">
-            <strong>Apprentice</strong><br>Start at Board 1
-          </button>
-          <button type="button" class="skill-btn" data-skill="2">
-            <strong>Adept</strong><br>Start at Board 4
-          </button>
-          <button type="button" class="skill-btn" data-skill="3">
-            <strong>Master</strong><br>Start at Board 7
-          </button>
+    <div id="home-screen" class="home-screen">
+      <div class="home-content">
+        <h1 class="home-title">All That Glitters</h1>
+        <p class="home-subtitle">Alchemy</p>
+        <div class="home-section">
+          <h3>Mode</h3>
+          <div class="home-options mode-options">
+            <button type="button" class="home-option-btn selected" data-mode="strategic">
+              <strong>Strategic</strong><br>Take your time, plan each move
+            </button>
+            <button type="button" class="home-option-btn" data-mode="time">
+              <strong>Time</strong><br>Race against the clock
+            </button>
+          </div>
         </div>
+        <div class="home-section">
+          <h3>Difficulty</h3>
+          <div class="home-options difficulty-options">
+            <button type="button" class="home-option-btn selected" data-difficulty="easy">
+              <strong>Easy</strong><br>Start at Board 1
+            </button>
+            <button type="button" class="home-option-btn" data-difficulty="medium">
+              <strong>Medium</strong><br>Start at Board 4
+            </button>
+            <button type="button" class="home-option-btn" data-difficulty="difficult">
+              <strong>Difficult</strong><br>Start at Board 7
+            </button>
+          </div>
+        </div>
+        <button type="button" class="home-play-btn" id="home-play-btn">Play</button>
       </div>
     </div>
     <div id="level-complete-modal" class="modal" hidden>

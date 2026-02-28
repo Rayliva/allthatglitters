@@ -61,11 +61,24 @@ export function getColorCountForBoard(board) {
   return 8;
 }
 
-// Skill levels: starting board
+// Skill levels: starting board (legacy, used for createGameState)
 export const SKILL_LEVELS = {
   1: { startBoard: 1, label: 'Apprentice' },
   2: { startBoard: 4, label: 'Adept' },
   3: { startBoard: 7, label: 'Master' },
+};
+
+// Game modes
+export const GAME_MODES = {
+  strategic: 'strategic',
+  time: 'time',
+};
+
+// Difficulty levels: startBoard and time limit per board (seconds, time mode only)
+export const DIFFICULTY_LEVELS = {
+  easy: { startBoard: 1, timePerBoard: 90, label: 'Easy' },
+  medium: { startBoard: 4, timePerBoard: 60, label: 'Medium' },
+  difficult: { startBoard: 7, timePerBoard: 45, label: 'Difficult' },
 };
 
 // Rankings from spec (score range -> title)

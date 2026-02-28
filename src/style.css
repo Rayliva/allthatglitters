@@ -40,6 +40,24 @@ body {
   background-clip: text;
 }
 
+.new-game-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  width: 100%;
+  background: rgba(74, 74, 106, 0.5);
+  color: #94a3b8;
+  border: 1px solid rgba(74, 74, 106, 0.6);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.new-game-btn:hover {
+  background: rgba(124, 58, 237, 0.4);
+  color: #e2e8f0;
+  border-color: rgba(124, 58, 237, 0.5);
+}
+
 .score-display {
   display: flex;
   gap: 1.5rem;
@@ -48,6 +66,19 @@ body {
 
 .score-display strong {
   color: #fbbf24;
+}
+
+.timer-display.hidden {
+  display: none;
+}
+
+.timer-low {
+  color: #ef4444 !important;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+  50% { opacity: 0.7; }
 }
 
 .game-main {
@@ -354,7 +385,121 @@ body {
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
 
-/* Skill Select Modal */
+/* Home Screen */
+.home-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+  z-index: 50;
+}
+
+.home-screen.hidden {
+  display: none;
+}
+
+.home-content {
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(74, 74, 106, 0.5);
+  border-radius: 16px;
+  padding: 2.5rem;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.home-title {
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.25rem;
+}
+
+.home-subtitle {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.home-section {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.home-section h3 {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
+}
+
+.home-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.home-option-btn {
+  padding: 0.875rem 1rem;
+  font-size: 0.9rem;
+  background: rgba(74, 74, 106, 0.3);
+  color: #e2e8f0;
+  border: 1px solid rgba(74, 74, 106, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  text-align: left;
+}
+
+.home-option-btn:hover {
+  background: rgba(74, 74, 106, 0.5);
+  border-color: rgba(124, 58, 237, 0.4);
+}
+
+.home-option-btn.selected {
+  background: rgba(124, 58, 237, 0.35);
+  border-color: rgba(124, 58, 237, 0.7);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.3);
+}
+
+.home-option-btn strong {
+  color: #fbbf24;
+}
+
+.home-play-btn {
+  margin-top: 0.5rem;
+  padding: 1rem 2.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #0f0f23;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.home-play-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
+}
+
+.home-play-btn:active {
+  transform: scale(0.98);
+}
+
+#game-container.hidden {
+  display: none;
+}
+
+/* Skill Select Modal (legacy - kept for reference) */
 .skill-intro {
   margin-bottom: 1.25rem;
   color: #94a3b8;

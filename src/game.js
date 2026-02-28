@@ -60,6 +60,8 @@ export class GameState {
     this.cellSize = config.cellSize ?? 48;
     this.skillLevel = config.skillLevel ?? 1;
     this.startBoard = config.startBoard ?? 1;
+    this.gameMode = config.gameMode ?? 'strategic';
+    this.timePerBoard = config.timePerBoard ?? 60; // seconds per board (time mode)
 
     this.grid = [];
     this.currentRune = null;
@@ -71,6 +73,7 @@ export class GameState {
     this.maxPlacementStreak = 0;
     this.boardsCleared = 0;
     this.gameStartTime = null;
+    this.boardTimeStart = null; // when current board started (time mode)
     this.init();
   }
 
@@ -100,6 +103,7 @@ export class GameState {
       this.maxPlacementStreak = 0;
       this.boardsCleared = 0;
       this.gameStartTime = Date.now();
+      this.boardTimeStart = this.gameMode === 'time' ? Date.now() : null;
     }
     this.selectedCell = null;
   }
@@ -128,6 +132,10 @@ export class GameState {
     }
     this.currentRune = createRune(this.board);
     this.selectedCell = null;
+    // Reset board timer for time mode
+    if (this.gameMode === 'time') {
+      this.boardTimeStart = Date.now();
+    }
   }
 
   /**
@@ -362,7 +370,22 @@ export class GameState {
   }
 
   isGameOver() {
+    if (this.gameMode === 'time' && this.timeExpired()) return true;
     return this.isForgeFull() && !this.hasValidPlacement();
+  }
+
+  /** Time mode: has the board timer run out? */
+  timeExpired() {
+    if (this.gameMode !== 'time' || !this.boardTimeStart) return false;
+    const elapsed = (Date.now() - this.boardTimeStart) / 1000;
+    return elapsed >= this.timePerBoard;
+  }
+
+  /** Time mode: seconds remaining on current board */
+  getBoardTimeRemaining() {
+    if (this.gameMode !== 'time' || !this.boardTimeStart) return null;
+    const elapsed = (Date.now() - this.boardTimeStart) / 1000;
+    return Math.max(0, Math.ceil(this.timePerBoard - elapsed));
   }
 
   /**
