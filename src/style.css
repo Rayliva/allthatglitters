@@ -90,18 +90,28 @@ body {
   padding: 1rem;
 }
 
-#rune-display,
 #forge-display {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.rune-preview {
+.cursor-rune {
+  position: fixed;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  visibility: hidden;
+}
+
+.cursor-rune canvas {
   display: block;
-  background: rgba(59, 59, 92, 0.6);
+  background: rgba(59, 59, 92, 0.9);
   border-radius: 6px;
   border: 1px solid rgba(74, 74, 106, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .forge-slot {

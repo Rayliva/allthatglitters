@@ -19,8 +19,6 @@
         <canvas id="game-canvas"></canvas>
         <aside class="game-sidebar">
           <div class="current-rune">
-            <h3>Current Rune</h3>
-            <div id="rune-display"></div>
             <button type="button" class="discard-btn" id="discard-btn">Discard to Forge</button>
           </div>
           <div class="forge-zone">
@@ -48,6 +46,7 @@
         <button type="button" class="restart-btn" id="restart-btn">Play Again</button>
       </div>
     </div>
+    <div id="cursor-rune" class="cursor-rune" aria-hidden="true"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

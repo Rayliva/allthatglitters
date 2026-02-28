@@ -63,7 +63,7 @@ function hideLevelCompleteModal() {
 function init() {
   const canvas = document.getElementById('game-canvas');
   const scoreEl = document.getElementById('score');
-  const runeDisplayEl = document.getElementById('rune-display');
+  const cursorRuneEl = document.getElementById('cursor-rune');
   const forgeDisplayEl = document.getElementById('forge-display');
 
   let gameState = new GameState({
@@ -99,12 +99,14 @@ function init() {
     document.getElementById('level').textContent = gameState.level;
     scoreEl.textContent = gameState.score;
 
-    // Current rune
-    runeDisplayEl.innerHTML = '';
+    // Cursor-following rune
+    cursorRuneEl.innerHTML = '';
     if (gameState.currentRune) {
       const runeEl = createRuneCanvas(gameState.currentRune, RUNE_PREVIEW_SIZE);
-      runeEl.className = 'rune-preview';
-      runeDisplayEl.appendChild(runeEl);
+      cursorRuneEl.appendChild(runeEl);
+      cursorRuneEl.style.visibility = 'visible';
+    } else {
+      cursorRuneEl.style.visibility = 'hidden';
     }
 
     // Forge
@@ -129,6 +131,12 @@ function init() {
   }
 
   inputHandler = new InputHandler(canvas, gameState, renderer, onAction);
+
+  // Cursor-following rune position
+  document.addEventListener('mousemove', (e) => {
+    cursorRuneEl.style.left = `${e.clientX}px`;
+    cursorRuneEl.style.top = `${e.clientY}px`;
+  });
 
   document.getElementById('discard-btn')?.addEventListener('click', () => {
     if (gameOver || levelComplete) return;
