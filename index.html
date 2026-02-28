@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>All That Glitters - Alchemy</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="game-container">
+      <header class="game-header">
+        <h1>All That Glitters</h1>
+        <div class="score-display">
+          <span>Score: <strong id="score">0</strong></span>
+        </div>
+      </header>
+      <main class="game-main">
+        <canvas id="game-canvas"></canvas>
+        <aside class="game-sidebar">
+          <div class="current-rune">
+            <h3>Current Rune</h3>
+            <div id="rune-display"></div>
+            <button type="button" class="discard-btn" id="discard-btn">Discard to Forge</button>
+          </div>
+          <div class="forge-zone">
+            <h3>The Forge</h3>
+            <div id="forge-display"></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
