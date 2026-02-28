@@ -16,7 +16,7 @@ const GRID_WIDTH = 9;
 const GRID_HEIGHT = 8;
 const FORGE_CAPACITY = 3;
 
-const TOP_DISPLAY = 5;
+const PER_PAGE = 5;
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -38,6 +38,7 @@ function createRuneCanvas(rune, size) {
 }
 
 function showSkillSelectModal() {
+  document.getElementById('cursor-rune').style.visibility = 'hidden';
   document.getElementById('skill-select-modal').hidden = false;
 }
 
@@ -45,8 +46,8 @@ function hideSkillSelectModal() {
   document.getElementById('skill-select-modal').hidden = true;
 }
 
-function renderLeaderboardList(listEl, belowEl, options = {}) {
-  const { highlightDate, highlightScore, currentPlayer } = options;
+function renderLeaderboardList(listEl, belowEl, pageControlsEl, options = {}) {
+  const { highlightDate, highlightScore, currentPlayer, page = 1 } = options;
   const scores = loadHighScores();
 
   // Build full ranked list for rank calculation (include current player if they didn't make it)
@@ -71,18 +72,45 @@ function renderLeaderboardList(listEl, belowEl, options = {}) {
     }
   }
 
-  // Top N entries
+  const totalPages = Math.max(1, Math.ceil(ranked.length / PER_PAGE));
+  const safePage = Math.max(1, Math.min(page, totalPages));
+  const startIdx = (safePage - 1) * PER_PAGE;
+  const toShow = ranked.slice(startIdx, startIdx + PER_PAGE);
+  const playerOnCurrentPage = playerEntry && playerRank >= startIdx + 1 && playerRank <= startIdx + toShow.length;
+
+  // List entries
   listEl.innerHTML = '';
-  const toShow = ranked.slice(0, TOP_DISPLAY);
   if (toShow.length === 0) {
-    listEl.innerHTML = '<li class="empty">No scores yet</li>';
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'No scores yet';
+    listEl.appendChild(li);
   } else {
-    toShow.forEach((entry) => {
+    toShow.forEach((entry, i) => {
       const li = document.createElement('li');
       li.dataset.date = entry.date ?? '';
       li.dataset.score = String(entry.score ?? 0);
+      const rank = startIdx + i + 1;
+      const rankSpan = document.createElement('span');
+      rankSpan.className = 'leaderboard-rank';
+      rankSpan.textContent = `${rank}.`;
       const name = entry.name || 'Anonymous';
-      li.textContent = `${name} — ${entry.score}`;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'leaderboard-name';
+      nameSpan.textContent = name;
+      const scoreSpan = document.createElement('span');
+      scoreSpan.className = 'leaderboard-score';
+      scoreSpan.textContent = String(entry.score);
+      li.appendChild(rankSpan);
+      li.appendChild(nameSpan);
+      li.appendChild(scoreSpan);
+      const isCurrentPlayer = playerEntry && (
+        entry === playerEntry ||
+        (currentPlayer?.madeList && entry.date === currentPlayer.date && entry.score === currentPlayer.score)
+      );
+      if (isCurrentPlayer) {
+        li.classList.add('leaderboard-current-player');
+      }
       if (highlightDate && highlightScore && entry.date === highlightDate && entry.score === highlightScore) {
         li.classList.add('name-updated');
       }
@@ -90,16 +118,33 @@ function renderLeaderboardList(listEl, belowEl, options = {}) {
     });
   }
 
-  // Below the line: show current player if they're not in top N
+  // Only show user's score on the page they're on (no "below the line")
   belowEl.innerHTML = '';
-  if (playerEntry && playerRank > TOP_DISPLAY) {
-    const divider = document.createElement('div');
-    divider.className = 'leaderboard-divider';
-    belowEl.appendChild(divider);
-    const yourRank = document.createElement('div');
-    yourRank.className = 'leaderboard-your-rank';
-    yourRank.textContent = `${playerRank}. ${playerEntry.name} — ${playerEntry.score}`;
-    belowEl.appendChild(yourRank);
+
+  // Page controls
+  pageControlsEl.innerHTML = '';
+  if (ranked.length > PER_PAGE) {
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'leaderboard-page-btn';
+    prevBtn.textContent = '← Prev';
+    prevBtn.disabled = safePage <= 1;
+    prevBtn.onclick = () => options.onPageChange?.(safePage - 1);
+
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'leaderboard-page-info';
+    pageInfo.textContent = `${startIdx + 1}–${Math.min(startIdx + PER_PAGE, ranked.length)} of ${ranked.length}`;
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'leaderboard-page-btn';
+    nextBtn.textContent = 'Next →';
+    nextBtn.disabled = safePage >= totalPages;
+    nextBtn.onclick = () => options.onPageChange?.(safePage + 1);
+
+    pageControlsEl.appendChild(prevBtn);
+    pageControlsEl.appendChild(pageInfo);
+    pageControlsEl.appendChild(nextBtn);
   }
 }
 
@@ -116,12 +161,14 @@ function showGameOverModal(gameState) {
 
   const nameEntryEl = document.querySelector('.name-entry');
   const nameInput = document.getElementById('highscore-name');
+  const nameSaveBtn = document.getElementById('highscore-save-btn');
   nameInput.value = randomName;
   nameInput.placeholder = 'Enter your name';
   nameEntryEl.hidden = !madeList;
 
   const listEl = document.getElementById('leaderboard-list');
   const belowEl = document.getElementById('leaderboard-below');
+  const pageControlsEl = document.getElementById('leaderboard-pages');
 
   const getCurrentPlayer = () => ({
     score,
@@ -130,11 +177,35 @@ function showGameOverModal(gameState) {
     madeList,
   });
 
+  // Start on player's page (whether they made the list or not)
+  const scores = loadHighScores();
+  let ranked = [...scores];
+  if (!madeList) {
+    const virtual = { score, date: null, name: 'You' };
+    ranked.push(virtual);
+    ranked.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  }
+  const playerIdx = madeList && date
+    ? ranked.findIndex((e) => e.date === date && e.score === score)
+    : ranked.findIndex((e) => e.name === 'You' && e.score === score);
+  const initialPage = playerIdx >= 0 ? Math.floor(playerIdx / PER_PAGE) + 1 : 1;
+
+  let currentPage = initialPage;
+
   const doRender = (animate = false) => {
-    renderLeaderboardList(listEl, belowEl, {
+    if (animate && madeList && date) {
+      const idx = scores.findIndex((e) => e.date === date && e.score === score);
+      if (idx >= 0) currentPage = Math.floor(idx / PER_PAGE) + 1;
+    }
+    renderLeaderboardList(listEl, belowEl, pageControlsEl, {
       highlightDate: animate ? date : null,
       highlightScore: animate ? score : null,
       currentPlayer: getCurrentPlayer(),
+      page: currentPage,
+      onPageChange: (newPage) => {
+        currentPage = newPage;
+        doRender(false);
+      },
     });
   };
 
@@ -147,19 +218,26 @@ function showGameOverModal(gameState) {
         doRender(animate);
       }
     };
+    const triggerSave = () => {
+      nameInput.blur();
+    };
     nameInput.oninput = () => updateDisplay(false);
     nameInput.onblur = () => updateDisplay(true);
     nameInput.onkeydown = (e) => {
       if (e.key === 'Enter') {
-        nameInput.blur();
+        e.preventDefault();
+        triggerSave();
       }
     };
+    nameSaveBtn.onclick = triggerSave;
   } else {
     nameInput.oninput = null;
     nameInput.onblur = null;
     nameInput.onkeydown = null;
+    nameSaveBtn.onclick = null;
   }
 
+  document.getElementById('cursor-rune').style.visibility = 'hidden';
   modal.hidden = false;
 }
 
@@ -292,7 +370,6 @@ function startGame(skillLevel) {
 
   document.getElementById('restart-btn').onclick = () => {
     hideGameOverModal();
-    gameOver = false;
     inputHandler?.destroy();
     showSkillSelectModal();
   };

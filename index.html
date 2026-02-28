@@ -69,12 +69,19 @@
         </div>
         <div class="name-entry">
           <label for="highscore-name">Your name (optional)</label>
-          <input type="text" id="highscore-name" placeholder="Enter your name" maxlength="20" />
+          <div class="name-entry-row">
+            <input type="text" id="highscore-name" placeholder="Enter your name" maxlength="20" />
+            <button type="button" class="name-save-btn" id="highscore-save-btn" title="Save name">Enter</button>
+          </div>
+          <span class="name-entry-hint">Press Enter to save</span>
         </div>
         <div class="leaderboard">
           <h3>High Scores</h3>
-          <ol id="leaderboard-list"></ol>
-          <div id="leaderboard-below"></div>
+          <div class="leaderboard-body">
+            <ol id="leaderboard-list"></ol>
+            <div id="leaderboard-below"></div>
+          </div>
+          <div id="leaderboard-pages" class="leaderboard-pages"></div>
         </div>
         <button type="button" class="restart-btn" id="restart-btn">Play Again</button>
       </div>

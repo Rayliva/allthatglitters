@@ -229,29 +229,83 @@ body {
   margin-bottom: 0.35rem;
 }
 
+.leaderboard-body {
+  min-height: 8rem;
+}
+
 #leaderboard-list {
   margin: 0;
   padding-left: 1.25rem;
   font-size: 0.875rem;
+  list-style: none;
 }
 
 #leaderboard-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
   margin-bottom: 0.2rem;
   padding: 0.15rem 0.35rem;
   border-radius: 4px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.leaderboard-divider {
-  height: 1px;
-  background: rgba(148, 163, 184, 0.3);
-  margin: 0.35rem 0;
+#leaderboard-list li .leaderboard-rank {
+  flex-shrink: 0;
+  width: 1.5rem;
+  color: #94a3b8;
 }
 
-.leaderboard-your-rank {
-  font-size: 0.875rem;
-  padding: 0.15rem 0.35rem;
+#leaderboard-list li .leaderboard-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#leaderboard-list li .leaderboard-score {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.leaderboard-pages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 0.35rem;
+}
+
+.leaderboard-page-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  background: rgba(148, 163, 184, 0.2);
   color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.leaderboard-page-btn:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.leaderboard-page-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.leaderboard-page-info {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+#leaderboard-list li.leaderboard-current-player {
+  background: rgba(251, 191, 36, 0.15);
+  box-shadow: inset 3px 0 0 #fbbf24;
 }
 
 #leaderboard-list li.name-updated {
@@ -364,9 +418,17 @@ body {
   margin-bottom: 0.15rem;
 }
 
+.name-entry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 14rem;
+  margin: 0 auto;
+}
+
 .name-entry input {
-  width: 100%;
-  max-width: 12rem;
+  flex: 1;
+  min-width: 0;
   padding: 0.35rem 0.5rem;
   font-size: 0.875rem;
   background: rgba(0, 0, 0, 0.3);
@@ -382,4 +444,27 @@ body {
 .name-entry input:focus {
   outline: none;
   border-color: #fbbf24;
+}
+
+.name-save-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  background: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.name-save-btn:hover {
+  background: rgba(251, 191, 36, 0.5);
+}
+
+.name-entry-hint {
+  display: block;
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 0.25rem;
 }

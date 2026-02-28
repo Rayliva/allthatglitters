@@ -3,7 +3,7 @@
  */
 
 const STORAGE_KEY = 'allthatglitters_highscores';
-const MAX_ENTRIES = 10;
+const MAX_ENTRIES = 500;
 
 /**
  * Generate a random "Player####" style name
