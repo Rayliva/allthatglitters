@@ -5,17 +5,17 @@
 import { CellState } from './game.js';
 import { ZODIAC_UNICODE } from './constants.js';
 
-// Color mapping for rune colors
+// Color mapping for rune colors (distinct hues for easy differentiation)
 export const COLOR_MAP = {
-  crimson: '#dc2626',
-  azure: '#2563eb',
-  amber: '#d97706',
-  emerald: '#059669',
-  violet: '#7c3aed',
+  crimson: '#dc2626',   // red
+  azure: '#2563eb',     // blue
+  amber: '#eab308',     // bright gold
+  emerald: '#16a34a',   // kelly green
+  violet: '#7c3aed',    // purple
   grey: '#6b7280',
-  coral: '#ea580c',
-  teal: '#0d9488',
-  rose: '#e11d48',
+  coral: '#f97316',     // bright orange
+  teal: '#06b6d4',     // cyan (distinct from green)
+  rose: '#db2777',     // magenta (distinct from red)
 };
 
 /**

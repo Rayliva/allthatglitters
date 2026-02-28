@@ -46,17 +46,17 @@ export const RUNE_COLORS = [
 ];
 
 // How many symbols/colors available at each board (1-indexed)
-// Board 1-3: 4 symbols, 3 colors
+// Board 1-3: 5 symbols, 4 colors
 // Board 4-6: 8 symbols, 5 colors
 // Board 7+: all 12 symbols, all 8 colors
 export function getSymbolCountForBoard(board) {
-  if (board <= 3) return 4;
+  if (board <= 3) return 5;
   if (board <= 6) return 8;
   return 12;
 }
 
 export function getColorCountForBoard(board) {
-  if (board <= 3) return 3;
+  if (board <= 3) return 4;
   if (board <= 6) return 5;
   return 8;
 }
