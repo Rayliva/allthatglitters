@@ -11,6 +11,7 @@
       <header class="game-header">
         <h1>All That Glitters</h1>
         <div class="score-display">
+          <span>Level <strong id="level">1</strong></span>
           <span>Score: <strong id="score">0</strong></span>
         </div>
       </header>
@@ -28,6 +29,24 @@
           </div>
         </aside>
       </main>
+    </div>
+    <div id="level-complete-modal" class="modal" hidden>
+      <div class="modal-content">
+        <h2>Congratulations!</h2>
+        <p class="level-message">Continue to level <strong id="next-level">2</strong></p>
+        <button type="button" class="restart-btn" id="continue-btn">Continue</button>
+      </div>
+    </div>
+    <div id="game-over-modal" class="modal" hidden>
+      <div class="modal-content">
+        <h2>Game Over</h2>
+        <p class="final-score">Your score: <strong id="final-score">0</strong></p>
+        <div class="leaderboard">
+          <h3>High Scores</h3>
+          <ol id="leaderboard-list"></ol>
+        </div>
+        <button type="button" class="restart-btn" id="restart-btn">Play Again</button>
+      </div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

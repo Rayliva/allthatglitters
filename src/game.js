@@ -37,12 +37,13 @@ export class GameState {
     this.currentRune = null;
     this.forge = [];
     this.score = 0;
+    this.level = 1;
     this.selectedCell = null;
 
     this.init();
   }
 
-  init() {
+  init(preserveScore = false) {
     // Initialize empty grid
     this.grid = [];
     for (let y = 0; y < this.gridHeight; y++) {
@@ -55,8 +56,16 @@ export class GameState {
 
     this.currentRune = createRune();
     this.forge = [];
-    this.score = 0;
+    if (!preserveScore) this.score = 0;
     this.selectedCell = null;
+  }
+
+  /**
+   * Start a new round (next level) - clear board, keep cumulative score
+   */
+  startNewRound() {
+    this.level += 1;
+    this.init(true);
   }
 
   /**
@@ -90,28 +99,30 @@ export class GameState {
   }
 
   /**
-   * Check if placement is valid - rune must share property with at least one adjacent neighbor
+   * Check if placement is valid - rune must share a property with EVERY adjacent neighbor that has a rune
+   * Can place on EMPTY cells or GOLD cells with no rune (cleared slots)
    */
   canPlaceAt(x, y) {
     const cell = this.getCell(x, y);
-    if (!cell || cell.state !== CellState.EMPTY || !this.currentRune) {
+    if (!cell || cell.rune !== null || !this.currentRune) {
       return false;
     }
 
     const adjacent = this.getAdjacentCells(x, y);
-    const hasValidNeighbor = adjacent.some((adjCell) => {
-      if (adjCell.state === CellState.EMPTY) return false;
-      const rune = adjCell.state === CellState.LEAD ? adjCell.rune : adjCell.rune;
-      return rune && this.sharesProperty(this.currentRune, rune);
-    });
+    const neighborsWithRunes = adjacent.filter((adjCell) => adjCell.rune !== null);
 
-    // First placement: allow anywhere if board is empty
-    const isEmpty = this.grid.every(
-      (row) => row.every((c) => c.state === CellState.EMPTY)
+    // First placement: allow anywhere if board has no runes
+    if (neighborsWithRunes.length === 0) {
+      const hasNoRunes = this.grid.every(
+        (row) => row.every((c) => c.rune === null)
+      );
+      return hasNoRunes;
+    }
+
+    // Every adjacent rune must share at least one property (color or symbol)
+    return neighborsWithRunes.every((adjCell) =>
+      this.sharesProperty(this.currentRune, adjCell.rune)
     );
-    if (isEmpty) return true;
-
-    return hasValidNeighbor;
   }
 
   /**
@@ -121,12 +132,13 @@ export class GameState {
     if (!this.canPlaceAt(x, y)) return false;
 
     const cell = this.getCell(x, y);
-    cell.state = CellState.LEAD;
     cell.rune = { ...this.currentRune };
+    if (cell.state !== CellState.GOLD) {
+      cell.state = CellState.LEAD;
+    }
 
     this.score += 10;
     this.onSuccessfulPlacement();
-    this.checkAndConvertToGold();
     this.checkRowColumnBonuses();
 
     this.currentRune = createRune();
@@ -135,53 +147,20 @@ export class GameState {
   }
 
   /**
-   * Convert cells to Gold when they form a valid connection (simplified: all placed cells become gold on next turn)
-   * For this implementation: cells convert to gold when they have 2+ matching neighbors
-   */
-  checkAndConvertToGold() {
-    const toConvert = [];
-    for (let y = 0; y < this.gridHeight; y++) {
-      for (let x = 0; x < this.gridWidth; x++) {
-        const cell = this.getCell(x, y);
-        if (cell.state !== CellState.LEAD || !cell.rune) continue;
-
-        const adjacent = this.getAdjacentCells(x, y);
-        const matchingNeighbors = adjacent.filter(
-          (adj) =>
-            adj.state !== CellState.EMPTY &&
-            adj.rune &&
-            this.sharesProperty(cell.rune, adj.rune)
-        );
-
-        if (matchingNeighbors.length >= 1) {
-          toConvert.push({ x, y });
-        }
-      }
-    }
-
-    toConvert.forEach(({ x, y }) => {
-      const cell = this.getCell(x, y);
-      cell.state = CellState.GOLD;
-      this.score += 5;
-    });
-  }
-
-  /**
-   * Check for completed rows/columns and grant bonuses
+   * When a row or column is fully filled (every cell has a rune), grant bonus, clear runes, but keep gold background
    */
   checkRowColumnBonuses() {
     const BONUS = 25;
 
-    // Check rows
+    // Check rows - only full when every cell has a rune (gold cells with no rune must be filled too)
     for (let y = 0; y < this.gridHeight; y++) {
       const row = this.grid[y];
-      const isFull = row.every((c) => c.state !== CellState.EMPTY);
+      const isFull = row.every((c) => c.rune !== null);
       if (isFull) {
         this.score += BONUS;
         row.forEach((c) => {
-          if (c.state === CellState.LEAD) {
-            c.state = CellState.GOLD;
-          }
+          c.state = CellState.GOLD;
+          c.rune = null;
         });
       }
     }
@@ -192,12 +171,13 @@ export class GameState {
       for (let y = 0; y < this.gridHeight; y++) {
         col.push(this.getCell(x, y));
       }
-      const isFull = col.every((c) => c.state !== CellState.EMPTY);
+      const isFull = col.every((c) => c && c.rune !== null);
       if (isFull) {
         this.score += BONUS;
         col.forEach((c) => {
-          if (c && c.state === CellState.LEAD) {
+          if (c) {
             c.state = CellState.GOLD;
+            c.rune = null;
           }
         });
       }
@@ -245,9 +225,38 @@ export class GameState {
   }
 
   /**
-   * Check if forge is full (game over condition)
+   * Check if forge is full
    */
   isForgeFull() {
     return this.forge.length >= this.forgeCapacity;
+  }
+
+  /**
+   * Check if the current rune can be placed anywhere on the board
+   */
+  hasValidPlacement() {
+    if (!this.currentRune) return false;
+    for (let y = 0; y < this.gridHeight; y++) {
+      for (let x = 0; x < this.gridWidth; x++) {
+        if (this.canPlaceAt(x, y)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Game over: forge is full and current rune cannot be placed anywhere
+   */
+  isGameOver() {
+    return this.isForgeFull() && !this.hasValidPlacement();
+  }
+
+  /**
+   * Level complete: all cells are gold
+   */
+  isLevelComplete() {
+    return this.grid.every((row) =>
+      row.every((c) => c.state === CellState.GOLD)
+    );
   }
 }
