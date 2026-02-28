@@ -208,12 +208,12 @@ export class GameState {
    * @returns {{ placed: boolean, rowColumnCleared: boolean }}
    */
   placeRune(x, y) {
-    if (!this.canPlaceAt(x, y)) return { placed: false, rowColumnCleared: false };
+    if (!this.canPlaceAt(x, y)) return { placed: false, rowColumnCleared: false, placementPoints: 0 };
 
     const cell = this.getCell(x, y);
+    const pts = getPlacementPoints(cell);
     cell.rune = { ...this.currentRune };
-
-    const pts = getPlacementPoints(this.board);
+    cell.state = CellState.GOLD; // Placing on lead turns it gold; gold stays gold
     this.score += pts;
     this.placementStreak += 1;
     if (this.placementStreak > this.maxPlacementStreak) {
@@ -221,27 +221,31 @@ export class GameState {
     }
 
     this.onSuccessfulPlacement();
-    const rowColumnCleared = this.checkRowColumnBonuses();
+    const rowClearBonus = this.checkRowColumnBonuses();
+    const totalPoints = pts + rowClearBonus;
 
     this.currentRune = createRune(this.board);
     this.selectedCell = null;
-    return { placed: true, rowColumnCleared };
+    return { placed: true, rowColumnCleared: rowClearBonus > 0, placementPoints: pts, totalPoints };
   }
 
   /**
    * When a row or column is fully filled, grant bonus, clear runes, set gold, EMPTY FORGE
    * @returns {boolean} Whether any row or column was cleared
    */
+  /**
+   * @returns {number} Total bonus points added (55 per row/column cleared)
+   */
   checkRowColumnBonuses() {
-    const BONUS = getRowClearPoints(this.board);
-    let anyCleared = false;
+    const BONUS = getRowClearPoints();
+    let totalBonus = 0;
 
     for (let y = 0; y < this.gridHeight; y++) {
       const row = this.grid[y];
       const isFull = row.every((c) => c.rune !== null);
       if (isFull) {
         this.score += BONUS;
-        anyCleared = true;
+        totalBonus += BONUS;
         row.forEach((c) => {
           c.state = CellState.GOLD;
           c.rune = null;
@@ -257,7 +261,7 @@ export class GameState {
       const isFull = col.every((c) => c && c.rune !== null);
       if (isFull) {
         this.score += BONUS;
-        anyCleared = true;
+        totalBonus += BONUS;
         col.forEach((c) => {
           if (c) {
             c.state = CellState.GOLD;
@@ -268,15 +272,15 @@ export class GameState {
     }
 
     // Row/column clear empties the forge
-    if (anyCleared) {
+    if (totalBonus > 0) {
       this.forge = [];
     }
 
     // Rare: all runes cleared without full gold -> give wild (spec)
-    if (anyCleared && this.countRunesOnBoard() === 0 && !this.isLevelComplete()) {
+    if (totalBonus > 0 && this.countRunesOnBoard() === 0 && !this.isLevelComplete()) {
       this.currentRune = { color: 'grey', symbol: 'wild', isWild: true };
     }
-    return anyCleared;
+    return totalBonus;
   }
 
   /**

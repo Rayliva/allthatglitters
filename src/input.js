@@ -3,7 +3,6 @@
  */
 
 import { playPlaceSound, playRowColumnClearSound, playForgeSound, playSkullSound } from './audio.js';
-import { getPlacementPoints } from './constants.js';
 
 export class InputHandler {
   constructor(canvas, gameState, renderer, onUpdate) {
@@ -65,8 +64,7 @@ export class InputHandler {
     // Normal placement
     const result = this.gameState.placeRune(gx, gy);
     if (result.placed) {
-      const pts = getPlacementPoints(this.gameState.board);
-      this.renderer.addScorePopup(gx, gy, pts);
+      this.renderer.addScorePopup(gx, gy, result.totalPoints);
       if (result.rowColumnCleared) {
         playRowColumnClearSound();
       } else {

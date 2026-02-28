@@ -101,13 +101,14 @@ export function getRanking(score) {
   return { title: 'Cursed', nextAt: 400 };
 }
 
-// Scoring: increases as game progresses (by board number)
-export function getPlacementPoints(board) {
-  return 10 + Math.floor((board - 1) / 3) * 2; // 10, 10, 10, 12, 12, 12, 14...
+// Scoring: gold vs lead placement, row clear, board clear
+// Placing on already-gold cell = 1 pt; placing on lead cell = 5 pts (and turns it gold)
+export function getPlacementPoints(cell) {
+  return cell?.state === 'gold' ? 1 : 5;
 }
 
-export function getRowClearPoints(board) {
-  return 25 + Math.floor((board - 1) / 3) * 5; // 25, 25, 25, 30, 30, 30, 35...
+export function getRowClearPoints() {
+  return 55;
 }
 
 export function getBoardClearPoints(board) {
