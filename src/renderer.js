@@ -11,6 +11,7 @@ export const COLOR_MAP = {
   amber: '#d97706',
   emerald: '#059669',
   violet: '#7c3aed',
+  grey: '#6b7280',
 };
 
 function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
@@ -198,7 +199,13 @@ export class Renderer {
     }
 
     if (cell.rune) {
-      drawRune(this.ctx, px + margin, py + margin, size, cell.rune);
+      if (cell.rune.isWild) {
+        // Wild space: entirely grey, no symbol
+        this.ctx.fillStyle = '#6b7280';
+        this.ctx.fillRect(px + margin, py + margin, size, size);
+      } else {
+        drawRune(this.ctx, px + margin, py + margin, size, cell.rune);
+      }
     }
   }
 

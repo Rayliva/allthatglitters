@@ -13,6 +13,11 @@ export const CellState = {
 export const RUNE_COLORS = ['crimson', 'azure', 'amber', 'emerald', 'violet'];
 export const RUNE_SYMBOLS = ['circle', 'triangle', 'square', 'star', 'diamond'];
 
+/** Wild space - entirely grey, any rune can be placed next to it. Clears when row/column clears. */
+export const STARTING_RUNE = { color: 'grey', symbol: 'square', isWild: true };
+export const STARTING_RUNE_X = 4;
+export const STARTING_RUNE_Y = 3;
+
 /**
  * Creates a random rune with a color and symbol
  */
@@ -54,6 +59,13 @@ export class GameState {
       this.grid.push(row);
     }
 
+    // Place starting grey square at 5x4 (appears at beginning of every round)
+    const startCell = this.getCell(STARTING_RUNE_X, STARTING_RUNE_Y);
+    if (startCell) {
+      startCell.rune = { ...STARTING_RUNE };
+      startCell.state = CellState.LEAD;
+    }
+
     this.currentRune = createRune();
     this.forge = [];
     if (!preserveScore) this.score = 0;
@@ -91,10 +103,12 @@ export class GameState {
   }
 
   /**
-   * Check if a rune shares a property (color or symbol) with another rune
+   * Check if a rune shares a property (color or symbol) with another rune.
+   * Wild spaces match any rune (any placement next to them is valid).
    */
   sharesProperty(runeA, runeB) {
     if (!runeA || !runeB) return false;
+    if (runeB.isWild) return true;
     return runeA.color === runeB.color || runeA.symbol === runeB.symbol;
   }
 

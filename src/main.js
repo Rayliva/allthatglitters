@@ -10,7 +10,7 @@ import { loadHighScores, saveScore } from './leaderboard.js';
 const RUNE_PREVIEW_SIZE = 40;
 
 const CELL_SIZE = 48;
-const GRID_WIDTH = 8;
+const GRID_WIDTH = 9;
 const GRID_HEIGHT = 8;
 
 function createRuneCanvas(rune, size) {

@@ -20,7 +20,7 @@ body {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  max-width: 900px;
+  max-width: 1000px;
 }
 
 .game-header {
@@ -61,8 +61,9 @@ body {
   background: #0d0d1a;
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  width: 420px;
-  height: 420px;
+  /* 9x8 grid at 48px/cell + 32px padding = 464x416 minimum */
+  width: 480px;
+  height: 450px;
 }
 
 .game-sidebar {
